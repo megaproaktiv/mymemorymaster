@@ -1,0 +1,21 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "mmm",
+  "outputfilename": "mmm",
+  "frontend:install": "npm install",
+  "frontend:build": "npm run build",
+  "frontend:dev:watcher": "npm run dev",
+  "frontend:dev:serverUrl": "auto",
+  "author": {
+    "name": "G.Glawe",
+    "email": "29772027+megaproaktiv@users.noreply.github.com"
+  },
+  "info": {
+    "protocols": [
+      {
+        "scheme": "mmm",
+        "role": "Viewer"
+      }
+    ]
+  }
+}

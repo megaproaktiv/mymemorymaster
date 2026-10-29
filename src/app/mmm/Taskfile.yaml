@@ -1,0 +1,91 @@
+version: "3"
+
+# Task-driven workflow for My Memory Master (mmm).
+# https://taskfile.dev
+
+vars:
+  APP: mmm
+
+tasks:
+  default:
+    desc: List available tasks
+    cmds:
+      - task --list
+    silent: true
+
+  deps:
+    desc: Install frontend dependencies
+    dir: frontend
+    cmds:
+      - npm install
+
+  bindings:
+    desc: Regenerate Wails TypeScript bindings from the Go API
+    cmds:
+      - wails generate module
+
+  fmt:
+    desc: Format Go code
+    cmds:
+      - go fmt ./...
+
+  vet:
+    desc: Vet Go code
+    cmds:
+      - go vet ./...
+
+  test:
+    desc: Run Go tests
+    cmds:
+      - go test ./...
+
+  frontend:build:
+    desc: Build the frontend bundle
+    dir: frontend
+    cmds:
+      - npm run build
+
+  check:
+    desc: fmt + vet + test + frontend build
+    cmds:
+      - task: fmt
+      - task: vet
+      - task: test
+      - task: frontend:build
+
+  build:
+    desc: Build the mmm app for the host platform (macOS)
+    cmds:
+      - wails build -s
+
+  build:windows:
+    desc: Build the mmm app for Windows
+    cmds:
+      - wails build -s -platform windows/amd64
+
+  run:
+    desc: Build and run the app
+    cmds:
+      - wails build -s
+      - ./build/bin/{{.APP}}.app/Contents/MacOS/{{.APP}}
+
+  install:
+    desc: Build and install the app into /Applications (macOS)
+    cmds:
+      - wails build -s
+      - rm -rf "/Applications/{{.APP}}.app"
+      - cp -R "./build/bin/{{.APP}}.app" "/Applications/{{.APP}}.app"
+      # Register the app (and its mmm:// URL scheme) with LaunchServices.
+      - /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "/Applications/{{.APP}}.app"
+      - echo "Installed to /Applications/{{.APP}}.app"
+
+  uninstall:
+    desc: Remove the installed app from /Applications (macOS)
+    cmds:
+      - rm -rf "/Applications/{{.APP}}.app"
+      - echo "Removed /Applications/{{.APP}}.app"
+
+  dev:
+    desc: Live-reload development
+    cmds:
+      - wails dev
