@@ -55,22 +55,32 @@ tasks:
 
   build:
     desc: Build the mmm app for the host platform (macOS)
+    # wails build -s skips the frontend bundle, so build it explicitly first to
+    # avoid shipping stale frontend/dist assets.
+    deps:
+      - frontend:build
     cmds:
       - wails build -s
 
   build:windows:
     desc: Build the mmm app for Windows
+    deps:
+      - frontend:build
     cmds:
       - wails build -s -platform windows/amd64
 
   run:
     desc: Build and run the app
+    deps:
+      - frontend:build
     cmds:
       - wails build -s
       - ./build/bin/{{.APP}}.app/Contents/MacOS/{{.APP}}
 
   install:
     desc: Build and install the app into /Applications (macOS)
+    deps:
+      - frontend:build
     cmds:
       - wails build -s
       - rm -rf "/Applications/{{.APP}}.app"

@@ -51,9 +51,13 @@ export function DuplicateCard(arg1:number,arg2:number,arg3:number,arg4:number):P
 
 export function DuplicateCards(arg1:Array<number>,arg2:number,arg3:number,arg4:number):Promise<store.DuplicateGroupResult>;
 
+export function ExportPlane(arg1:number,arg2:string,arg3:boolean):Promise<string>;
+
 export function GetBackupDir():Promise<string>;
 
 export function GetCardDocument(arg1:number):Promise<string>;
+
+export function GetExportDir():Promise<string>;
 
 export function GetLanguage():Promise<string>;
 
@@ -89,6 +93,8 @@ export function PickBackupDir():Promise<string>;
 
 export function PickDirectory():Promise<string>;
 
+export function PickExportDir():Promise<string>;
+
 export function PickFile():Promise<string>;
 
 export function ResizeCard(arg1:number,arg2:number,arg3:number):Promise<void>;
@@ -114,6 +120,8 @@ export function SetCardDate(arg1:number,arg2:string):Promise<void>;
 export function SetCardIcon(arg1:number,arg2:string):Promise<void>;
 
 export function SetCardLinkLabel(arg1:number,arg2:string):Promise<void>;
+
+export function SetExportDir(arg1:string):Promise<void>;
 
 export function SetLanguage(arg1:string):Promise<void>;
 

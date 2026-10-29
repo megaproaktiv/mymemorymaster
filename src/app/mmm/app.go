@@ -11,10 +11,12 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"mmm/internal/backup"
 	"mmm/internal/config"
 	"mmm/internal/domain"
+	"mmm/internal/exporter"
 	"mmm/internal/store"
 
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
@@ -549,6 +551,120 @@ func (a *App) PickBackupDir() (string, error) {
 		return "", err
 	}
 	return dir, nil
+}
+
+// ---- Export ----------------------------------------------------------------
+
+// defaultExportDir returns the user's Downloads folder (the default export
+// location on macOS and elsewhere), falling back to the home directory.
+func defaultExportDir() string {
+	home, err := os.UserHomeDir()
+	if err != nil || home == "" {
+		return ""
+	}
+	return filepath.Join(home, "Downloads")
+}
+
+// GetExportDir returns the configured export directory, or the ~/Downloads
+// default when none has been set.
+func (a *App) GetExportDir() string {
+	if a.cfg.ExportDir != "" {
+		return a.cfg.ExportDir
+	}
+	return defaultExportDir()
+}
+
+// SetExportDir changes and persists the export directory (in the config file).
+func (a *App) SetExportDir(dir string) error {
+	if dir == "" {
+		return fmt.Errorf("empty export directory")
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fmt.Errorf("create export dir: %w", err)
+	}
+	a.cfg.ExportDir = dir
+	return config.Save(a.cfg)
+}
+
+// PickExportDir opens a folder picker and, if chosen, sets the export dir.
+func (a *App) PickExportDir() (string, error) {
+	if a.ctx == nil {
+		return "", fmt.Errorf("no window context")
+	}
+	dir, err := wailsRuntime.OpenDirectoryDialog(a.ctx, wailsRuntime.OpenDialogOptions{
+		Title: "Choose export folder",
+	})
+	if err != nil || dir == "" {
+		return "", err
+	}
+	if err := a.SetExportDir(dir); err != nil {
+		return "", err
+	}
+	return dir, nil
+}
+
+// ExportPlane renders a plane to a Markdown file in the export directory.
+// When recursive is true, child planes of cards and links are included. title
+// is the current level's label, used for the document heading and file name.
+// Returns the written file path.
+func (a *App) ExportPlane(planeID int64, title string, recursive bool) (string, error) {
+	dir := a.GetExportDir()
+	if dir == "" {
+		return "", fmt.Errorf("no export directory configured")
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return "", fmt.Errorf("create export dir: %w", err)
+	}
+
+	md, err := exporter.Render(a.store, planeID, exporter.Options{
+		Title:     title,
+		Recursive: recursive,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	name := exportFilename(title, recursive)
+	path := filepath.Join(dir, name)
+	if err := os.WriteFile(path, []byte(md), 0o644); err != nil {
+		return "", fmt.Errorf("write export: %w", err)
+	}
+	// Reveal the exported file in the OS file manager (best effort).
+	_ = openTargetWithOS(dir)
+	return path, nil
+}
+
+// exportFilename builds a timestamped, filesystem-safe Markdown file name from
+// the level title.
+func exportFilename(title string, recursive bool) string {
+	base := sanitizeFilename(title)
+	if base == "" {
+		base = "export"
+	}
+	suffix := ""
+	if recursive {
+		suffix = "-recursive"
+	}
+	return fmt.Sprintf("mmm-%s%s-%s.md", base, suffix, time.Now().Format("20060102-150405"))
+}
+
+// sanitizeFilename reduces a title to a safe, lower-ish file-name stem.
+func sanitizeFilename(s string) string {
+	s = strings.TrimSpace(s)
+	var out strings.Builder
+	for _, r := range s {
+		switch {
+		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9':
+			out.WriteRune(r)
+		case r == ' ' || r == '-' || r == '_':
+			out.WriteRune('-')
+		}
+	}
+	res := strings.Trim(out.String(), "-")
+	if len([]rune(res)) > 40 {
+		res = string([]rune(res)[:40])
+	}
+	return res
 }
 
 // Restore recovers the deck from a backup archive. The backup's database is

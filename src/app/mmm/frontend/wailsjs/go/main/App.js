@@ -94,12 +94,20 @@ export function DuplicateCards(arg1, arg2, arg3, arg4) {
   return window['go']['main']['App']['DuplicateCards'](arg1, arg2, arg3, arg4);
 }
 
+export function ExportPlane(arg1, arg2, arg3) {
+  return window['go']['main']['App']['ExportPlane'](arg1, arg2, arg3);
+}
+
 export function GetBackupDir() {
   return window['go']['main']['App']['GetBackupDir']();
 }
 
 export function GetCardDocument(arg1) {
   return window['go']['main']['App']['GetCardDocument'](arg1);
+}
+
+export function GetExportDir() {
+  return window['go']['main']['App']['GetExportDir']();
 }
 
 export function GetLanguage() {
@@ -170,6 +178,10 @@ export function PickDirectory() {
   return window['go']['main']['App']['PickDirectory']();
 }
 
+export function PickExportDir() {
+  return window['go']['main']['App']['PickExportDir']();
+}
+
 export function PickFile() {
   return window['go']['main']['App']['PickFile']();
 }
@@ -220,6 +232,10 @@ export function SetCardIcon(arg1, arg2) {
 
 export function SetCardLinkLabel(arg1, arg2) {
   return window['go']['main']['App']['SetCardLinkLabel'](arg1, arg2);
+}
+
+export function SetExportDir(arg1) {
+  return window['go']['main']['App']['SetExportDir'](arg1);
 }
 
 export function SetLanguage(arg1) {

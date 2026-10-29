@@ -1317,7 +1317,27 @@ class Controller {
         disabled: !this.clipboard,
         action: () => this.pasteCardAt(w.x - CARD_W / 2, w.y - CARD_H / 2),
       },
+      {
+        label: t("ctx.exportLevel"),
+        action: () => this.exportLevel(false),
+      },
+      {
+        label: t("ctx.exportLevelRecursive"),
+        action: () => this.exportLevel(true),
+      },
     ]);
+  }
+
+  // Export the current plane (optionally including nested child planes) to a
+  // Markdown file in the configured export folder.
+  private async exportLevel(recursive: boolean) {
+    const title = this.frame.label || t("app.title");
+    try {
+      const path = await App.ExportPlane(this.planeId, title, recursive);
+      this.setStatus(`${t("export.done")} ${path}`);
+    } catch (err) {
+      this.setStatus(`${t("export.failed")}: ${String(err)}`);
+    }
   }
 
   // Ten named colors (used for links and tags).
@@ -2713,11 +2733,17 @@ class Controller {
 
   // ---- Backup / restore ----------------------------------------------------
 
-  // Settings dialog: configure the backup directory.
+  // Settings dialog: configure the backup and export directories.
   private async openSettings() {
-    let current = "";
+    let currentBackup = "";
+    let currentExport = "";
     try {
-      current = await App.GetBackupDir();
+      currentBackup = await App.GetBackupDir();
+    } catch {
+      /* ignore */
+    }
+    try {
+      currentExport = await App.GetExportDir();
     } catch {
       /* ignore */
     }
@@ -2732,13 +2758,20 @@ class Controller {
         <label class="fld-label">${t("settings.backupDir")}</label>
         <div style="display:flex;gap:8px;align-items:center">
           <input class="bdir" readonly style="flex:1;padding:8px;border:1px solid var(--line);border-radius:6px;font:inherit" />
-          <button class="pick primary">${t("settings.choose")}</button>
+          <button class="pick-backup primary">${t("settings.choose")}</button>
+        </div>
+        <label class="fld-label" style="margin-top:14px">${t("settings.exportDir")}</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input class="edir" readonly style="flex:1;padding:8px;border:1px solid var(--line);border-radius:6px;font:inherit" />
+          <button class="pick-export primary">${t("settings.choose")}</button>
         </div>
       </div>`;
     overlay.appendChild(panel);
     this.host.appendChild(overlay);
-    const input = panel.querySelector(".bdir") as HTMLInputElement;
-    input.value = current;
+    const backupInput = panel.querySelector(".bdir") as HTMLInputElement;
+    const exportInput = panel.querySelector(".edir") as HTMLInputElement;
+    backupInput.value = currentBackup;
+    exportInput.value = currentExport;
     const close = () => {
       overlay.remove();
       this.host.focus();
@@ -2747,12 +2780,23 @@ class Controller {
     overlay.addEventListener("pointerdown", (e) => {
       if (e.target === overlay) close();
     });
-    panel.querySelector(".pick")!.addEventListener("click", async () => {
+    panel.querySelector(".pick-backup")!.addEventListener("click", async () => {
       try {
         const dir = await App.PickBackupDir();
         if (dir) {
-          input.value = dir;
+          backupInput.value = dir;
           this.setStatus(t("settings.backupDirSet"));
+        }
+      } catch (err) {
+        this.setStatus(String(err));
+      }
+    });
+    panel.querySelector(".pick-export")!.addEventListener("click", async () => {
+      try {
+        const dir = await App.PickExportDir();
+        if (dir) {
+          exportInput.value = dir;
+          this.setStatus(t("settings.exportDirSet"));
         }
       } catch (err) {
         this.setStatus(String(err));

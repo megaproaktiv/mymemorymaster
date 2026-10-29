@@ -12,6 +12,7 @@ import (
 // Config holds user-level settings.
 type Config struct {
 	BackupDir string `json:"backupDir"`
+	ExportDir string `json:"exportDir"`
 	Language  string `json:"language"`
 }
 
